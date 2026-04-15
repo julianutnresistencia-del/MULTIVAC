@@ -1,0 +1,11 @@
+// Comentario
+WHEN sensor_luz < 250lux DO
+    foco_entrada.estado = ON
+    foco_entrada.brillo = 80%
+END
+
+EVERY 30m DO
+    IF reloj.hora > 22:00 THEN
+        altavoz.mensaje = "Son las 22hs"
+    END
+END
