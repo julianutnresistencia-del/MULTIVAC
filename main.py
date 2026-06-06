@@ -3,6 +3,7 @@
 PALABRAS_RESERVADAS =["or", "and", "not"]
 OPERADORES = ["!", "=", "<", ">"]
 ATRIBUTOS = ["estado", "brillo", "color_val", "pocentaje_val", "modo", "temp_obj", "discreto_val","temp_obj", "posicion", "hora_val", "fecha","volumen","mute", "mensaje", "email_notif", "activada"]
+IDENTIFICADORES = ["foco", "aire", "persiana", "cerradura", "reloj", "altavoz","alarma"]
 
 #Controlador del while para mantener el programa en ejecución.
 activado = True
@@ -29,7 +30,7 @@ def clasificar_caracter(caracter):
 #Cada clave del diccionario corresponde con un estado, y su valor es otro diccionario que define las transiciones posibles desde ese estado.
 tabla_transiciones = {
     "INICIO":{
-        "Letra": "LOGICO",
+        "Letra": "PALABRA",
         "Menos": "DIGITO",
         "Numero": "DIGITO",
         "Operador": "OPERADOR",
@@ -85,16 +86,41 @@ tabla_transiciones = {
         "Operador": "ERROR",
         "Espacio": "ACEPTACION"
     },
-    "LOGICO":{
-        "Letra": "LOGICO",
+    "PALABRA":{
+        "Letra": "PALABRA",
         "Numero": "ERROR",
         "Operador": "ERROR",
+        "Guion": "IDENTIFICADOR",
         "Espacio": "ACEPTACION"
     }, 
     "PORCENTAJE":{
         "Letra": "ERROR",
         "Numero": "ERROR",
         "Operador": "ERROR",
+        "Espacio": "ACEPTACION"
+    },
+    "IDENTIFICADOR":{
+        "Letra": "IDENTIFICADOR",
+        "Numero": "ERROR",
+        "Operador": "ERROR",
+        "Guion": "ERROR",
+        "Selector": "SELECTOR",
+        "Espacio": "ERROR"
+    },
+    "SELECTOR":{
+        "Letra": "ATRIBUTO",
+        "Numero": "ERROR",
+        "Operador": "ERROR",
+        "Guion": "ERROR",
+        "Selector": "ERROR",
+        "Espacio": "ERROR"
+    },
+    "ATRIBUTO":{
+        "Letra": "ATRIBUTO",
+        "Numero": "ERROR",
+        "Operador": "ERROR",
+        "Guion": "ATRIBUTO",
+        "Selector": "ERROR",
         "Espacio": "ACEPTACION"
     }
 }
@@ -106,18 +132,19 @@ def motor_lexer(string):
     tokens = []
     for caracter in string:
         categoria = clasificar_caracter(caracter)
-        #print(categoria)
+        print(categoria)
         acumulador += caracter
         if categoria in tabla_transiciones[estado_actual]:
             estado_anterior = estado_actual
             estado_actual = tabla_transiciones[estado_actual][categoria]
-            #print(estado_actual + " | " + acumulador ) #-->Activar para ver los estados en cada iteración.
+            print(estado_actual + " | " + acumulador ) #-->Activar para ver los estados en cada iteración.
             match estado_actual:
                 case "PORCENTAJE":
                     if acumulador[-1] == "%" and int(acumulador[:-1]) >= 0 and int(acumulador[:-1]) <= 100:
                         continue
                     else:
                         return "Error token Porcentaje: El símbolo aceptado al final del token es '%'. Además, el valor numérico debe estar entre 0 y 100."
+                
                 case "TEMPERATURA":
                     if acumulador[-1] == "c":
                         rango = int(acumulador[:-2])  # saca el "°c"
@@ -127,6 +154,7 @@ def motor_lexer(string):
                             return "Error token Temperatura: Temperatura fuera de rango (-30 a 50)"
                     else:
                         return "Error token Temperatura: La letra aceptada al final del token es 'c' (°c)"
+                
                 case "TIEMPO/LUZ":
                         if acumulador[-1] in ["h", "m", "s"] and int(acumulador[:-1]) > 0:
                             estado_anterior = "TIEMPO"
@@ -135,6 +163,7 @@ def motor_lexer(string):
                             estado_actual = "LUZ"
                         else:
                             return "Error token Tiempo/Luz: La letra aceptada al final del token es 'h', 'm', 's' para tiempo o 'l' para luz. El valor de luz debe estar entre 0 y 1000."
+                
                 case "OPERADOR":
                         if acumulador[-1:].strip() in OPERADORES:
                             if len(acumulador.strip()) <= 2:
@@ -146,12 +175,25 @@ def motor_lexer(string):
                                 return "Error token Operador: Un operador no puede tener más de dos símbolos."
                         else:
                             return "Error token Operador: El símbolo ingresado no es un operador válido."
-                case "LOGICO":
-                    if not any(p.startswith(acumulador) for p in PALABRAS_RESERVADAS):
-                        return "Error: '{}' no es una palabra reservada válida. Las palabras reservadas válidas son: {}".format(acumulador, ", ".join(PALABRAS_RESERVADAS))
-                    else: 
-                        continue
+                        
+                case "PALABRA": #Esto es parte de la lógica de LÓGICO.
+                    print("entra acá, acordate del lógico!")
+                    continue
+
+                case "IDENTIFICADOR":
+                    print("este es el identificador: " + acumulador.split("_", 1)[0])
+                    if acumulador.split("_", 1)[0] not in IDENTIFICADORES:
+                        return "Error: '{}' no es un identificador válido. Los identificadores válidos deben comenzar con: {}".format(acumulador, ", ".join(IDENTIFICADORES))
+               
+                case "SELECTOR":
+                    tokens.append("IDENTIFICADOR: " + acumulador[:-1])
+                    tokens.append(estado_actual + ": " + acumulador[-1])
                 
+                case "ATRIBUTO":
+                    if not any(p.startswith(acumulador.split(".", 1)[1]) for p in ATRIBUTOS):
+                        return "Error: '{}' no es un atributo válido. Los atributos válidos son: {}".format(acumulador, ", ".join(ATRIBUTOS))
+
+
             if estado_actual == "LUZ":
                 if acumulador[-1] == "l" or acumulador[-2:] == "lu":
                     continue
@@ -159,8 +201,12 @@ def motor_lexer(string):
                     estado_actual = "ACEPTACION"
                 else: 
                     return "Error token Luz: el valor de luz debe ser finalizar en lux"
+            
             if estado_actual == "ACEPTACION":
-                tokens.append(estado_anterior + ": " + acumulador)
+                if estado_anterior == "ATRIBUTO":
+                    tokens.append("ATRIBUTO: " + acumulador.split(".",1)[1])
+                else:
+                    tokens.append(estado_anterior + ": " + acumulador)
                 acumulador = ""
                 estado_actual = "INICIO"
         else:
@@ -182,13 +228,17 @@ def motor_lexer(string):
                 tokens.append(estado_actual + ": " + acumulador)
                 acumulador = ""
                 estado_actual = "INICIO"
-            case "LOGICO":
+            case "PALABRA": #Esto es parte de la lógica de LÓGICO.
                 if acumulador in PALABRAS_RESERVADAS:
                     tokens.append(estado_actual + ": " + acumulador)
                     acumulador = ""
                     estado_actual = "INICIO"
                 else:
                     return "Error token: '{}' no es una palabra reservada válida. Las palabras reservadas válidas son: {}".format(acumulador, ", ".join(PALABRAS_RESERVADAS))
+            case "ATRIBUTO":
+                tokens.append(estado_actual + ": " + acumulador.split(".",1)[1])
+                acumulador = ""
+                estado_actual = "INICIO"
 
     #Finalmente, se devuelve la lista de tokens encontrados o un mensaje indicando que no se encontraron tokens válidos.
     if tokens:
