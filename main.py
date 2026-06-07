@@ -1,14 +1,13 @@
-#Estas son las palabras reservadas que tiene la gramática: 
-#Son palabras fijas que están presentes como símbolos terminales del lenguaje. 
-PALABRAS_RESERVADAS =["or", "and", "not"]
-OPERADORES = ["!", "=", "<", ">"]
-ATRIBUTOS = ["estado", "brillo", "color_val", "pocentaje_val", "modo", "temp_obj", "discreto_val","temp_obj", "posicion", "hora_val", "fecha","volumen","mute", "mensaje", "email_notif", "activada"]
-IDENTIFICADORES = ["foco", "aire", "persiana", "cerradura", "reloj", "altavoz","alarma"]
+# Listas unificadas de símbolos terminales y gramática
+PALABRAS_RESERVADAS = ["if", "then", "else", "end", "or", "and", "not"]
+BOOLEANOS_DISPOSITIVO = ["ON", "off"]
+BOOLEANOS_SENSOR = ["True", "False", "true", "false"] # Agregadas minúsculas por si acaso
+OPERADORES = ["+", "-", "*", "/", "=", "<", ">", "!"]
+ATRIBUTOS = ["estado", "brillo", "color_val", "pocentaje_val", "modo", "temp_obj", "discreto_val", "posicion", "hora_val", "fecha","volumen","mute", "mensaje", "email_notif", "activada"]
+IDENTIFICADORES = ["foco", "aire", "persiana", "cerradura", "reloj", "altavoz", "alarma", "sensor"] # 'sensor' agregado
 
-#Controlador del while para mantener el programa en ejecución.
 activado = True
 
-#Función para clasificar los caracteres recibidos. Utiliza una estructura match-case para determinar la categoría de un caracter ingresado como argumento de la función.
 def clasificar_caracter(caracter):
     match caracter:
         case '%': return 'Porcentaje'
@@ -19,23 +18,20 @@ def clasificar_caracter(caracter):
         case ".": return 'Selector'
         case "_": return 'Guion'
         case " ": return 'Espacio'
+        case "@": return 'Arroba'
         case _ if caracter in OPERADORES: return 'Operador'
         case _ if caracter.isdigit(): return 'Numero'
         case _ if caracter.isalpha(): return 'Letra'
         case _: return 'Desconocido'
 
-#Tabla de transición de estados:
-#Esta tabla consiste en un diccionario de diccionarios que define un aceptor de estados finitos. 
-#Este es simplemente un pequeño ejemplo que sirve como ilustración para implementar luego en toda la gramática completa. Aquí solo quiero dar una idea de cómo funciona.
-#Cada clave del diccionario corresponde con un estado, y su valor es otro diccionario que define las transiciones posibles desde ese estado.
+# Tabla combinada de transiciones
 tabla_transiciones = {
     "INICIO":{
         "Letra": "PALABRA",
         "Menos": "DIGITO",
         "Numero": "DIGITO",
         "Operador": "OPERADOR",
-        "comentario": "COMENTARIO",
-        "Espacio": "INICIO"
+        "Espacio": "INICIO" # Ignora los espacios basura de arranque
     },
     "ERROR":{
         "Letra": "ERROR",
@@ -88,10 +84,11 @@ tabla_transiciones = {
     },
     "PALABRA":{
         "Letra": "PALABRA",
-        "Numero": "ERROR",
+        "Numero": "MAIL_POSIBLE",  # Conexión hacia la validación de mail
         "Operador": "ERROR",
-        "Guion": "IDENTIFICADOR",
-        "Espacio": "ACEPTACION"
+        "Guion": "IDENTIFICADOR",  # Conexión hacia la validación del sistema (ej. sensor_)
+        "Espacio": "ACEPTACION",
+        "Arroba": "DOMINIO_MAIL"   # Conexión hacia mail si es todo texto y un arroba
     }, 
     "PORCENTAJE":{
         "Letra": "ERROR",
@@ -103,7 +100,7 @@ tabla_transiciones = {
         "Letra": "IDENTIFICADOR",
         "Numero": "ERROR",
         "Operador": "ERROR",
-        "Guion": "ERROR",
+        "Guion": "IDENTIFICADOR", # Ajustado para soportar múltiples '_' (ej. sensor_humo_id)
         "Selector": "SELECTOR",
         "Espacio": "ERROR"
     },
@@ -122,7 +119,40 @@ tabla_transiciones = {
         "Guion": "ATRIBUTO",
         "Selector": "ERROR",
         "Espacio": "ACEPTACION"
-    }
+    },
+    # --------- ESTADOS NUEVOS (EMAILS) ---------
+    "MAIL_POSIBLE":{
+        "Letra": "MAIL_POSIBLE",
+        "Numero": "MAIL_POSIBLE",
+        "Espacio": "ERROR",
+        "Arroba" : "DOMINIO_MAIL",
+    },
+    "DOMINIO_MAIL":{
+        "Letra": "DOMINIO_MAIL",
+        "Numero": "DOMINIO_MAIL",
+        "Selector": "EXTENSION1",
+        "Espacio": "ERROR"
+    },
+    "EXTENSION1":{
+        "Letra": "EXTENSION2",
+        "Numero": "EXTENSION2",
+        "Espacio": "ERROR",    
+    },
+    "EXTENSION2":{
+        "Letra": "EXTENSION3",
+        "Numero": "EXTENSION3",
+        "Espacio": "ACEPTACION",
+     },
+     "EXTENSION3":{
+        "Letra": "EXTENSION4",
+        "Numero": "EXTENSION4",
+        "Espacio": "ACEPTACION",
+     },
+     "EXTENSION4":{
+        "Letra": "ERROR",
+        "Numero": "ERROR",
+        "Espacio": "ACEPTACION",
+     }
 }
 
 def motor_lexer(string):
@@ -130,130 +160,120 @@ def motor_lexer(string):
     estado_actual = "INICIO"
     acumulador = ""
     tokens = []
+    
     for caracter in string:
         categoria = clasificar_caracter(caracter)
-        print(categoria)
         acumulador += caracter
+        
         if categoria in tabla_transiciones[estado_actual]:
             estado_anterior = estado_actual
             estado_actual = tabla_transiciones[estado_actual][categoria]
-            print(estado_actual + " | " + acumulador ) #-->Activar para ver los estados en cada iteración.
+            
+            # --- Validaciones dinámicas (En tiempo de tránsito) ---
             match estado_actual:
                 case "PORCENTAJE":
-                    if acumulador[-1] == "%" and int(acumulador[:-1]) >= 0 and int(acumulador[:-1]) <= 100:
-                        continue
-                    else:
-                        return "Error token Porcentaje: El símbolo aceptado al final del token es '%'. Además, el valor numérico debe estar entre 0 y 100."
-                
+                    if not (acumulador[-1] == "%" and int(acumulador[:-1]) >= 0 and int(acumulador[:-1]) <= 100):
+                        return "Error token Porcentaje: El símbolo debe ser '%' y el valor numérico entre 0 y 100."
                 case "TEMPERATURA":
                     if acumulador[-1] == "c":
-                        rango = int(acumulador[:-2])  # saca el "°c"
-                        if -30 <= rango <= 50:
-                            continue
-                        else:
-                            return "Error token Temperatura: Temperatura fuera de rango (-30 a 50)"
+                        rango = int(acumulador[:-2])
+                        if not (-30 <= rango <= 50): return "Error Temperatura: Fuera de rango (-30 a 50)"
                     else:
-                        return "Error token Temperatura: La letra aceptada al final del token es 'c' (°c)"
-                
+                        return "Error Temperatura: Falta la letra 'c' (°c)"
                 case "TIEMPO/LUZ":
-                        if acumulador[-1] in ["h", "m", "s"] and int(acumulador[:-1]) > 0:
-                            estado_anterior = "TIEMPO"
-                            estado_actual = "ACEPTACION"
-                        elif acumulador[-1] =="l" and int(acumulador[:-1]) > 0 and int(acumulador[:-1]) <= 1000:
-                            estado_actual = "LUZ"
-                        else:
-                            return "Error token Tiempo/Luz: La letra aceptada al final del token es 'h', 'm', 's' para tiempo o 'l' para luz. El valor de luz debe estar entre 0 y 1000."
-                
+                    if acumulador[-1] in ["h", "m", "s"] and int(acumulador[:-1]) > 0:
+                        estado_anterior = "TIEMPO"
+                        estado_actual = "ACEPTACION"
+                    elif acumulador[-1] =="l" and int(acumulador[:-1]) > 0 and int(acumulador[:-1]) <= 1000:
+                        estado_actual = "LUZ"
+                    else:
+                        return "Error Tiempo/Luz: Letra no válida o rango excedido."
                 case "OPERADOR":
-                        if acumulador[-1:].strip() in OPERADORES:
-                            if len(acumulador.strip()) <= 2:
-                                    if len(acumulador) == 2 and acumulador[1] != "=":
-                                        return "Error token Operador: Operador no reconocido."
-                                    else:
-                                        continue
-                            else:
-                                return "Error token Operador: Un operador no puede tener más de dos símbolos."
-                        else:
-                            return "Error token Operador: El símbolo ingresado no es un operador válido."
-                        
-                case "PALABRA": #Esto es parte de la lógica de LÓGICO.
-                    print("entra acá, acordate del lógico!")
-                    continue
-
+                    if acumulador[-1:].strip() in OPERADORES:
+                        if len(acumulador.strip()) > 2 or (len(acumulador) == 2 and acumulador[1] != "="):
+                            return "Error Operador: Operador no reconocido o límite excedido."
+                    else:
+                        return "Error Operador: Símbolo inválido."
                 case "IDENTIFICADOR":
-                    print("este es el identificador: " + acumulador.split("_", 1)[0])
-                    if acumulador.split("_", 1)[0] not in IDENTIFICADORES:
-                        return "Error: '{}' no es un identificador válido. Los identificadores válidos deben comenzar con: {}".format(acumulador, ", ".join(IDENTIFICADORES))
-               
+                    base = acumulador.split("_", 1)[0]
+                    if base not in IDENTIFICADORES:
+                        return "Error: '{}' no es un identificador válido.".format(base)
                 case "SELECTOR":
                     tokens.append("IDENTIFICADOR: " + acumulador[:-1])
                     tokens.append(estado_actual + ": " + acumulador[-1])
-                
                 case "ATRIBUTO":
                     if not any(p.startswith(acumulador.split(".", 1)[1]) for p in ATRIBUTOS):
-                        return "Error: '{}' no es un atributo válido. Los atributos válidos son: {}".format(acumulador, ", ".join(ATRIBUTOS))
-
-
-            if estado_actual == "LUZ":
-                if acumulador[-1] == "l" or acumulador[-2:] == "lu":
-                    continue
-                elif acumulador [-3:] == "lux":
-                    estado_actual = "ACEPTACION"
-                else: 
-                    return "Error token Luz: el valor de luz debe ser finalizar en lux"
+                        return "Error: '{}' no es un atributo válido.".format(acumulador)
             
+            if estado_actual == "LUZ":
+                if not (acumulador[-1] == "l" or acumulador[-2:] == "lu" or acumulador [-3:] == "lux"):
+                    return "Error Luz: Debe finalizar en lux"
+                if acumulador [-3:] == "lux":
+                    estado_actual = "ACEPTACION"
+            
+            # --- Validaciones de Aceptación y Clasificación Final ---
             if estado_actual == "ACEPTACION":
-                if estado_anterior == "ATRIBUTO":
-                    tokens.append("ATRIBUTO: " + acumulador.split(".",1)[1])
+                # Como transita con un espacio, evaluamos todo menos el espacio final
+                valor = acumulador[:-1]
+                
+                if estado_anterior == "PALABRA":
+                    if valor in BOOLEANOS_DISPOSITIVO:
+                        tokens.append("BOOLEANO DISPOSITIVO: " + valor)
+                    elif valor in BOOLEANOS_SENSOR:
+                        tokens.append("BOOLEANO SENSOR: " + valor)
+                    elif valor in PALABRAS_RESERVADAS:
+                        tokens.append("PALABRA RESERVADA: " + valor)
+                    else:
+                        tokens.append("PALABRA: " + valor)
+                
+                elif estado_anterior in ["EXTENSION2", "EXTENSION3", "EXTENSION4"]:
+                    tokens.append("EMAIL: " + valor)
+                
+                elif estado_anterior == "ATRIBUTO":
+                    tokens.append("ATRIBUTO: " + valor.split(".",1)[1])
+                
                 else:
-                    tokens.append(estado_anterior + ": " + acumulador)
+                    tokens.append(estado_anterior + ": " + valor)
+                
+                # Reseteamos para el próximo token
                 acumulador = ""
                 estado_actual = "INICIO"
         else:
-            return "Transición no definida para el caracter '{}' en el estado '{}'".format(caracter, estado_actual)
-    #Si al terminal el bucle, el acumulador aún tiene contenido, se verifica el estado actual y se procesa el token pendiente.    
+            return "Transición no definida para el caracter '{}' en el estado '{}' (acumulado: {})".format(caracter, estado_actual, acumulador)
+            
+    # Manejo del token que queda pendiente si el string no termina en espacio
     if acumulador:
+        valor = acumulador.strip()
         match estado_actual:
-            case "ERROR":
-                return "Error token: Token no reconocido '{}'".format(acumulador)
-            case "TEMPERATURA":
-                tokens.append(estado_actual + ": " + acumulador)
-                acumulador = ""
-                estado_actual = "INICIO"
-            case "PORCENTAJE":
-                tokens.append(estado_actual + ": " + acumulador)
-                acumulador = ""
-                estado_actual = "INICIO"
-            case "OPERADOR":
-                tokens.append(estado_actual + ": " + acumulador)
-                acumulador = ""
-                estado_actual = "INICIO"
-            case "PALABRA": #Esto es parte de la lógica de LÓGICO.
-                if acumulador in PALABRAS_RESERVADAS:
-                    tokens.append(estado_actual + ": " + acumulador)
-                    acumulador = ""
-                    estado_actual = "INICIO"
+            case "ERROR" | "MAIL_POSIBLE" | "DOMINIO_MAIL" | "EXTENSION1":
+                return "Error léxico: Token inválido o incompleto '{}' (Fase: {})".format(valor, estado_actual)
+            case "TEMPERATURA" | "PORCENTAJE" | "OPERADOR":
+                tokens.append(estado_actual + ": " + valor)
+            case "PALABRA":
+                if valor in BOOLEANOS_DISPOSITIVO:
+                    tokens.append("BOOLEANO DISPOSITIVO: " + valor)
+                elif valor in BOOLEANOS_SENSOR:
+                    tokens.append("BOOLEANO SENSOR: " + valor)
+                elif valor in PALABRAS_RESERVADAS:
+                    tokens.append("PALABRA RESERVADA: " + valor)
                 else:
-                    return "Error token: '{}' no es una palabra reservada válida. Las palabras reservadas válidas son: {}".format(acumulador, ", ".join(PALABRAS_RESERVADAS))
+                    tokens.append("PALABRA: " + valor)
+            case "EXTENSION2" | "EXTENSION3" | "EXTENSION4":
+                tokens.append("EMAIL: " + valor)
             case "ATRIBUTO":
-                tokens.append(estado_actual + ": " + acumulador.split(".",1)[1])
-                acumulador = ""
-                estado_actual = "INICIO"
+                tokens.append(estado_actual + ": " + valor.split(".",1)[1])
+            case _:
+                tokens.append(estado_actual + ": " + valor)
 
-    #Finalmente, se devuelve la lista de tokens encontrados o un mensaje indicando que no se encontraron tokens válidos.
     if tokens:
         return tokens
     else:
         return "No se encontraron tokens válidos"
 
-
 while activado:
-    #Input de entrada.
-    input_string = input("Ingrese el string de entrada: ")
-
-    #Ejemplo de uso de la función para clasificar el caracter ingresado.
+    input_string = input("\nIngrese el string de entrada: ")
     print(motor_lexer(input_string))
-
-    input_string = input("para continuar presione enter, para salir presione 0: ")
-    if input_string == "0":
+    
+    opcion = input("Para continuar presione ENTER, para salir presione 0: ")
+    if opcion == "0":
         activado = False
