@@ -1,0 +1,64 @@
+// === ESCENARIO GENERAL DE AUTOMATIZACION ===
+
+// Control de iluminación por luz y movimiento
+WHEN sensor_luz < 200lux AND sensor_movimiento == TRUE DO
+    foco_sala.estado = ON
+    foco_sala.brillo = 75%
+    foco_sala.color = warm_white
+END
+
+// Climatización inteligente con condiciones anidadas
+WHEN sensor_temp_ext > 30°C DO
+    IF sensor_temp_int > 27°C THEN
+        aire_acondicionado.estado = ON
+        aire_acondicionado.modo = FRIO
+        aire_acondicionado.temp_objetivo = 23°C
+    ELSE
+        ventilador_techo.estado = ON
+        ventilador_techo.velocidad = 3
+    END
+END
+
+// Automatización nocturna cada cierto tiempo
+EVERY 15m DO
+    IF reloj.hora > 21:30 AND alarma.estado == OFF THEN
+        persiana_sala.posicion = 0%
+        luces_exteriores.estado = ON
+        altavoz_sala.volumen = 20%
+        altavoz_sala.mensaje = "Modo noche activado"
+    END
+END
+
+// Seguridad ante humo
+IF sensor_humo == TRUE THEN
+    alarma.estado = ON
+    cerradura_principal.estado = OFF
+    persiana_sala.posicion = 100%
+    altavoz_sala.mensaje = "PELIGRO: HUMO DETECTADO"
+    altavoz_sala.email = emergencia@smart-home.com
+END
+
+
+// === BLOQUE CON ERRORES LEXICOS INTENCIONALES ===
+
+// Error 1: símbolo inválido '@@'
+WHEN sensor_luz @@ 300lux DO
+    foco_error.estado = ON
+END
+
+// Error 2: número mal formado
+foco_sala.brillo = 80%%
+
+// Error 3: string sin cerrar
+altavoz_sala.mensaje = "Mensaje sin cerrar
+
+// Error 4: identificador inválido
+1sensor.estado = ON
+
+// Error 5: operador incorrecto
+IF sensor_temp_int => 25°C THEN
+    aire_acondicionado.estado = ON
+END
+
+// Error 6: email mal formado
+altavoz_sala.email = usuario@@dominio.com
