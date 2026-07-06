@@ -1,0 +1,100 @@
+// Sistema de seguridad nocturna
+WHEN sensor_movimiento == TRUE DO
+    IF reloj.hora > 22:00 AND alarma.activada == OFF THEN
+        alarma_casa.estado = ON
+        alarma_casa.activada = ON
+        altavoz_comedor.volumen = 80%
+        altavoz_comedor.mensaje = "Movimiento detectado en la casa"
+        altavoz_comedor.email_notif = seguridad@smart-home.com.ar
+        cerradura_principal.estado = ON
+        foco_entrada.estado = ON
+        foco_entrada.brillo = 100%
+        foco_entrada.color = rojo
+    ELSE
+        alarma_casa.estado = OFF
+        foco_entrada.brillo = 30%
+    END
+END
+
+// Control de temperatura por presencia
+WHEN sensor_temp > 28°C DO
+    IF sensor_movimiento == TRUE THEN
+        aire_acondicionado.estado = ON
+        aire_acondicionado.modo = FRIO
+        aire_acondicionado.temp_obj = 22°C
+        altavoz_comedor.mensaje = "Aire acondicionado activado"
+    ELSE
+        aire_acondicionado.estado = OFF
+    END
+END
+
+// Control de iluminacion automatica
+WHEN sensor_luz < 300lux DO
+    foco_patio.estado = ON
+    foco_patio.brillo = 70%
+    foco_patio.color = blanco
+    foco_entrada.estado = ON
+    foco_entrada.brillo = 90%
+END
+
+// Rutina de la noche cada 30 minutos
+EVERY 30m DO
+    IF reloj.hora > 23:00 AND sensor_movimiento == FALSE THEN
+        foco_entrada.estado = OFF
+        foco_patio.estado = OFF
+        aire_acondicionado.temp_obj = 20°C
+        persiana_sala.posicion = 0%
+        cerradura_principal.estado = ON
+        altavoz_comedor.volumen = 0%
+        altavoz_comedor.mensaje = "Buenas noches. Sistema en modo nocturno"
+        altavoz_comedor.email_notif = felipe@smart-home.com.ar
+    END
+END
+
+// Rutina de la manana cada 1 hora
+EVERY 1h DO
+    IF reloj.hora > 06:00 AND reloj.hora < 08:00 THEN
+        persiana_sala.posicion = 100%
+        foco_entrada.estado = ON
+        foco_entrada.brillo = 50%
+        foco_entrada.color = blanco
+        aire_acondicionado.estado = ON
+        aire_acondicionado.modo = VENT
+        altavoz_comedor.mensaje = "Buenos dias. Iniciando rutina matutina"
+    END
+END
+
+// Alerta de incendio maxima prioridad
+WHEN sensor_humo == TRUE DO
+    alarma_casa.estado = ON
+    alarma_casa.activada = ON
+    aire_acondicionado.estado = OFF
+    cerradura_principal.estado = OFF
+    persiana_sala.posicion = 100%
+    foco_entrada.estado = ON
+    foco_entrada.brillo = 100%
+    foco_entrada.color = rojo
+    altavoz_comedor.volumen = 100%
+    altavoz_comedor.mensaje = "PELIGRO INCENDIO EVACUАР INMEDIATAMENTE"
+    altavoz_comedor.email_notif = bomberos@smart-home.com.ar
+END
+
+// Control de humedad
+WHEN sensor_humedad > 80% DO
+    IF sensor_movimiento == TRUE THEN
+        aire_acondicionado.estado = ON
+        aire_acondicionado.modo = VENT
+        altavoz_comedor.mensaje = "Humedad elevada. Ventilando ambiente"
+    END
+END
+
+// Cierre automatico al salir
+IF sensor_movimiento == FALSE AND reloj.hora > 08:00 THEN
+    cerradura_principal.estado = ON
+    alarma_casa.activada = ON
+    foco_entrada.estado = OFF
+    foco_patio.estado = OFF
+    aire_acondicionado.estado = OFF
+    persiana_sala.posicion = 50%
+    altavoz_comedor.email_notif = dueno@smart-home.com.ar
+END

@@ -1,0 +1,130 @@
+
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>SMART-HOME Dashboard</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background-color: #f4f6f8;
+                color: #2b2b2b;
+                margin: 0;
+                padding: 30px;
+            }
+            .contenedor {
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            h1.titulo-principal {
+                text-align: center;
+                color: #2c3e50;
+            }
+            /* .caja y .cajadis mantienen exactamente el borde de 1px
+               y el padding de 20px que pide la consigna; el resto
+               de las propiedades son estética adicional. */
+            .caja {
+                border: 1px solid green;
+                padding: 20px;
+                border-radius: 6px;
+                background-color: #eafaf1;
+                margin-bottom: 25px;
+            }
+            .caja h2 {
+                color: #1e8449;
+                margin: 8px 0;
+            }
+            .cajadis {
+                border: 1px solid gray;
+                padding: 20px;
+                border-radius: 6px;
+                background-color: #ffffff;
+                margin-bottom: 20px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            }
+            .cajadis h1 {
+                color: #34495e;
+                margin-top: 0;
+                font-size: 1.3em;
+                border-bottom: 1px solid #ecf0f1;
+                padding-bottom: 8px;
+            }
+            .cajadis ul {
+                list-style: none;
+                padding-left: 0;
+            }
+            .cajadis li {
+                padding: 4px 0;
+            }
+            .cajadis a {
+                color: #2980b9;
+                text-decoration: none;
+            }
+            .cajadis a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="contenedor">
+            <h1 class="titulo-principal">Estado de la Smart Home</h1>
+            <h1>Lista de Sensores</h1>
+            <div class="caja">
+                <h2>sensor_luz: 300lux</h2>
+<h2>sensor_temp: 28°C</h2>
+<h2>sensor_humo: TRUE</h2>
+
+            </div>
+            <h1>Lista de Actuadores</h1>
+            <div class="cajadis">
+    <h1>foco_living</h1>
+    <ul>
+<li>estado: ON</li>
+<li>brillo: 70%</li>
+<li>color: azul</li>
+    </ul>
+</div>
+<div class="cajadis">
+    <h1>aire_living</h1>
+    <ul>
+<li>estado: OFF</li>
+<li>modo: frio</li>
+<li>temp_obj: 22°C</li>
+    </ul>
+</div>
+<div class="cajadis">
+    <h1>reloj</h1>
+    <ul>
+<li>hora: 22:00</li>
+    </ul>
+</div>
+<div class="cajadis">
+    <h1>persiana_living</h1>
+    <ul>
+<li>posicion: 0%</li>
+    </ul>
+</div>
+<div class="cajadis">
+    <h1>cerradura_principal</h1>
+    <ul>
+<li>estado: ON</li>
+    </ul>
+</div>
+<div class="cajadis">
+    <h1>altavoz_living</h1>
+    <ul>
+<li>mensaje: Buenas noches</li>
+<li>email_notif: <a href="mailto:admin@casa.com.ar">Contactar a admin</a></li>
+    </ul>
+</div>
+<div class="cajadis">
+    <h1>alarma</h1>
+    <ul>
+<li>activada: ON</li>
+    </ul>
+</div>
+
+        </div>
+    </body>
+    </html>
+    

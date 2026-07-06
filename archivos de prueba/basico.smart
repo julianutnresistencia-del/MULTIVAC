@@ -1,0 +1,7 @@
+// El sensor de luz (entrada) activa el foco (salida)  
+WHEN sensor_luz < 250lux DO  
+foco_entrada.estado = ON  
+foco_entrada.brillo = 80%  
+foco_patio.estado = ON 
+foco_patio.color = azul 
+END  

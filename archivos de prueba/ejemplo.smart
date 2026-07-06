@@ -1,0 +1,29 @@
+// Enciende las luces del living si hay poca luz
+WHEN sensor_luz < 300lux DO
+    foco_living.estado = ON
+    foco_living.brillo = 70%
+    foco_living.color = azul
+END
+
+// Climatizacion automatica segun temperatura
+WHEN sensor_temp > 28°C DO
+    aire_living.estado = ON
+    aire_living.modo = frio
+    aire_living.temp_obj = 22°C
+END
+
+// Rutina nocturna cada 30 minutos
+EVERY 30m DO
+    IF reloj.hora > 22:00 THEN
+        persiana_living.posicion = 0%
+        cerradura_principal.estado = ON
+        altavoz_living.mensaje = "Buenas noches"
+        altavoz_living.email_notif = admin@casa.com.ar
+    END
+END
+
+// Alarma de humo
+IF sensor_humo == TRUE THEN
+    alarma.activada = ON
+    aire_living.estado = OFF
+END

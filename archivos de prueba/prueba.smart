@@ -1,0 +1,554 @@
+//Acepta si o si
+// El sensor de luz (entrada) activa el foco (salida)  
+WHEN sensor_luz < 250lux DO  
+foco_entrada.estado = ON  
+foco_entrada.brillo = 80%  
+foco_patio.estado = ON 
+foco_patio.color = blue 
+END  
+
+
+// =====================================================
+// CASOS VALIDOS - deberian pasar el analisis lexico
+// sin ningun ErrorLexico
+// =====================================================
+
+// --- Palabras reservadas y estructura tipica ---
+if foco.estado == on then
+    aire.temp_obj = 25°c
+end
+
+when sensor_movimiento == true do
+    alarma.activada = on
+end
+
+every 10h do
+    persiana.posicion = 50%
+end
+
+// --- Booleanos de dispositivo (on/off) y de sensor (true/false) ---
+foco.estado = on
+aire.estado = off
+alarma.activada = true
+bool_sensor = false
+
+// --- Numeros enteros ---
+100
+0
+42
+
+// --- Porcentajes (rango 0-100) ---
+0%
+50%
+100%
+
+// --- Temperaturas (rango -30 a 50, deben terminar en c/C) ---
+25°c
+-10°c
+50°C
+-30°c
+
+// --- Tiempo (debe terminar en h, m o s) ---
+10h
+5m
+120s
+
+// --- Luz (rango 0-1000, sufijos l / lu / lux) ---
+100l
+250lu
+500lux
+
+// --- Fechas DD/MM/AAAA (valida dia/mes/anio 1900-2099) ---
+15/06/2024
+01/01/2000
+28/02/2023
+
+// --- Horas HH MM, formato 24hs ---
+08:30
+23:59
+00:00
+
+// --- Correos electronicos ---
+// (los segmentos de extension despues del dominio admiten hasta
+// 3 letras, por eso "com" y "ar" funcionan pero un segmento mas
+// largo como "dominio" en un subdominio no)
+usuario@dominio.com
+usuario@dominio.com.ar
+contacto_2024@empresa.org
+
+// --- Dispositivos validos ---
+foco
+aire
+persiana
+cerradura
+reloj
+altavoz
+alarma
+
+// --- Sensores validos ---
+sensor_luz
+sensor_temp
+sensor_humedad
+sensor_movimiento
+sensor_humo
+bool_sensor
+
+// --- Dispositivo.atributo (se emiten 3 tokens - DISPOSITIVO, PUNTO, ATRIBUTO) ---
+foco.estado
+foco.brillo
+aire.temp_obj
+aire.modo
+persiana.posicion
+reloj.hora
+altavoz.volumen
+alarma.activada
+
+// --- Valores discretos ---
+blanco
+rojo
+azul
+blue
+frio
+calor
+vent
+
+// --- Operadores ---
+// nota - los simbolos suma resta y barra tienen su propia categoria
+// especial (Mas, Menos, Barra) que se procesa antes de llegar a la
+// categoria generica Operador, asi que hoy no funcionan como
+// operador suelto. Los que si llegan directo al estado OPERADOR
+// desde INICIO son estos
+* = < > !
+== != <= >=
+
+// --- Texto entre comillas dobles ---
+"encender la luz del living"
+"mensaje con numeros 123 y simbolos !@#"
+
+
+
+
+
+
+//Normal (podria aceptar o no )
+
+// === ESCENARIO GENERAL DE AUTOMATIZACION ===
+
+// Control de iluminación por luz y movimiento
+WHEN sensor_luz < 200lux AND sensor_movimiento == TRUE DO
+    foco_sala.estado = ON
+    foco_sala.brillo = 75%
+    foco_sala.color = warm_white
+END
+
+// Climatización inteligente con condiciones anidadas
+WHEN sensor_temp_ext > 30°C DO
+    IF sensor_temp_int > 27°C THEN
+        aire_acondicionado.estado = ON
+        aire_acondicionado.modo = FRIO
+        aire_acondicionado.temp_objetivo = 23°C
+    ELSE
+        ventilador_techo.estado = ON
+        ventilador_techo.velocidad = 3
+    END
+END
+
+// Automatización nocturna cada cierto tiempo
+EVERY 15m DO
+    IF reloj.hora > 21:30 AND alarma.estado == OFF THEN
+        persiana_sala.posicion = 0%
+        luces_exteriores.estado = ON
+        altavoz_sala.volumen = 20%
+        altavoz_sala.mensaje = "Modo noche activado"
+    END
+END
+
+// Seguridad ante humo
+IF sensor_humo == TRUE THEN
+    alarma.estado = ON
+    cerradura_principal.estado = OFF
+    persiana_sala.posicion = 100%
+    altavoz_sala.mensaje = "PELIGRO: HUMO DETECTADO"
+    altavoz_sala.email = emergencia@smart-home.com
+END
+
+
+
+// --- Palabras reservadas en mayuscula/minuscula/mezcladas ---
+IF foco.estado == ON THEN
+    aire.temp_obj = 25°c
+END
+
+When sensor_movimiento == True Do
+    alarma.activada = On
+end
+
+EVERY 10h DO
+    persiana.posicion = 50%
+END
+
+// --- Bloque if/then/else completo ---
+if aire.estado == on then
+    persiana.posicion = 0%
+else
+    persiana.posicion = 100%
+end
+
+// --- Combinacion de condiciones and / or / not ---
+if sensor_movimiento == true and sensor_humo == false then
+    alarma.activada = on
+end
+
+if sensor_temp > 25°c or sensor_humedad < 40% then
+    aire.estado = on
+end
+
+if not sensor_movimiento == true then
+    foco.estado = off
+end
+
+// --- Porcentajes limite ---
+0%
+1%
+99%
+100%
+
+// --- Temperaturas limite (rango -30 a 50) ---
+-30°c
+-29°c
+0°c
+49°C
+50°c
+
+// --- Tiempo con los tres sufijos, valores variados ---
+1h
+1m
+1s
+59m
+23h
+
+// --- Luz con los tres sufijos, limites ---
+0l
+0lu
+0lux
+999lux
+1000lux
+
+// --- Fechas limite (rango de anio 1900-2099) ---
+01/01/1900
+31/12/2099
+29/02/2024
+28/02/2025
+
+// --- Horas limite ---
+00:00
+12:00
+23:59
+
+// --- Emails variados dentro de la regla de extension <=3 letras ---
+a@b.io
+soporte@smart.net
+soporte.tecnico@smart-home.com
+usuario_1@dominio.com.ar
+
+// --- Todos los atributos de dispositivo segun la gramatica ---
+foco.estado = on
+foco.brillo = 75%
+foco.color = rojo
+aire.estado = off
+aire.modo = calor
+aire.temp_obj = 18°c
+persiana.posicion = 25%
+cerradura.estado = on
+altavoz.volumen = 60%
+altavoz.mute = off
+altavoz.mensaje = "bienvenido a casa"
+altavoz.email_notif = alertas@smart-home.com
+alarma.estado = on
+alarma.activada = true
+reloj.hora = 07:15
+
+// --- Valores discretos restantes ---
+FRIO
+CALOR
+VENT
+Blanco
+Azul
+
+// --- Comentarios con caracteres variados ---
+// linea de prueba con 100%, 25°c y "texto entre comillas"
+// otro comentario con operador == y email test@test.com
+
+// --- Texto entre comillas con distintos contenidos ---
+"la temperatura subio a 30 grados"
+"alerta: sensor de humo activado"
+"multiples   espacios   internos"
+
+// --- Frases completas al estilo del ejemplo oficial ---
+when sensor_luz < 250lux do
+    foco.estado = on
+end
+
+every 30m do
+    reloj.hora = 06:30
+end
+
+if reloj.hora > 22:00 and alarma.activada == off then
+    alarma.activada = on
+end
+
+
+
+// =====================================================
+// CASOS INVALIDOS - EXTRA
+// Continuacion de casos_invalidos.smart, mismo criterio:
+// cada linea deberia generar al menos un ErrorLexico.
+// =====================================================
+
+// Dispositivo no reconocido (nombre parecido pero no valido)
+ventilador
+
+// Otro dispositivo inventado
+camara
+
+// Sensor con nombre valido de dispositivo, no de sensor
+sensor_aire
+
+// Atributo invalido para "aire"
+aire.velocidad
+
+// Atributo invalido para "persiana"
+persiana.color
+
+// Atributo invalido para "alarma"
+alarma.volumen
+
+// Atributo que existe pero pertenece a otro dispositivo (mezclado)
+persiana.brillo
+
+// Porcentaje con signo negativo (no deberia existir para %)
+-10%
+
+// Porcentaje justo un numero por encima del limite
+101%
+
+// Temperatura justo un grado por encima del limite superior
+51°c
+
+// Temperatura justo un grado por debajo del limite inferior
+-31°c
+
+// Tiempo negativo
+-5h
+
+// Tiempo con sufijo invalido (no es h, m ni s)
+10d
+
+// Luz justo un numero por encima del limite
+1001lux
+
+// Luz negativa
+-100lux
+
+// Fecha con dia 00 (no existe el dia cero)
+00/06/2024
+
+// Fecha con mes 00
+15/00/2024
+
+// Fecha con anio menor al rango permitido
+15/06/1899
+
+// Fecha con anio mayor al rango permitido
+15/06/2100
+
+// Fecha 31 de un mes de 30 dias
+31/04/2024
+
+// Hora con formato de un solo digito en la hora
+9:30
+
+// Hora con minutos de un solo digito
+09:5
+
+// Hora con la hora en negativo (no tiene sentido, deberia fallar)
+-1:00
+
+// Email sin usuario antes de la arroba
+@dominio.com
+
+// Email con doble arroba
+usuario@@dominio.com
+
+// Email con extension de un solo caracter invalido tras el punto (numero)
+usuario@dominio.c1
+
+// Texto con comillas simples en vez de dobles (no reconocidas como TEXTO)
+'texto entre comillas simples'
+
+// Texto sin comilla de apertura, solo cierre
+texto sin comillas"
+
+// Caracter no reconocido en medio de una linea valida
+foco.estado = on ~ off
+
+// Simbolo suelto sin significado en la gramatica
+$
+
+// Simbolo suelto sin significado en la gramatica (otro caso)
+%
+
+// Selector (.) sin nada despues
+foco.
+
+// Selector (.) precedido de espacio y numero
+foco .estado
+
+// Dos puntos sueltos sin formato de hora valido
+::
+
+// Numero seguido inmediatamente de letras no validas como unidad
+100xyz
+
+// Combinacion de letras y numeros que no matchea ningun token conocido
+abc123°
+
+// --- Casos de regresion / inconsistencias conocidas del lexer.py ---
+// (documentar aca segun se detecten nuevos, siguiendo el criterio
+// de casos_invalidos.smart: estos hoy fallan aunque tal vez "deberian"
+// ser validos, o viceversa - quedan para discutir con el grupo)
+
+// Coma suelta, no definida como separador en ningun estado
+,
+
+// Parentesis sueltos, no aparecen en la gramatica del PDF
+(
+)
+
+// Punto y coma suelto
+;
+
+
+
+
+
+
+//No debería aceptar 
+
+// === BLOQUE CON ERRORES LEXICOS INTENCIONALES ===
+
+// Error 1: símbolo inválido '@@'
+WHEN sensor_luz @@ 300lux DO
+    foco_error.estado = ON
+END
+
+// Error 2: número mal formado
+foco_sala.brillo = 80%%
+
+// Error 3: string sin cerrar
+altavoz_sala.mensaje = "Mensaje sin cerrar
+
+// Error 4: identificador inválido
+1sensor.estado = ON
+
+// Error 5: operador incorrecto
+IF sensor_temp_int => 25°C THEN
+    aire_acondicionado.estado = ON
+END
+
+// Error 6: email mal formado
+altavoz_sala.email = usuario@@dominio.com
+
+// =====================================================
+// CASOS INVALIDOS - cada linea deberia generar
+// al menos un ErrorLexico. El comentario de arriba
+// de cada caso indica que regla se esta probando.
+// =====================================================
+
+// Dispositivo no reconocido (no esta en DISPOSITIVOS_VALIDOS)
+microondas
+
+// Atributo invalido para un dispositivo valido
+foco.velocidad
+
+// Sensor invalido (base no esta en SENSORES_VALIDOS)
+sensor_ruido
+
+// Porcentaje fuera de rango (maximo 100)
+150%
+
+// Porcentaje fuera de rango (otro caso)
+200%
+
+// Temperatura fuera de rango (-30 a 50)
+60°c
+
+// Temperatura fuera de rango, lado negativo
+-40°c
+
+// Tiempo en cero (debe ser positivo, > 0)
+0h
+
+// Luz fuera de rango (0 a 1000)
+1500lux
+
+// Fecha con dia invalido (debe ser 1-31)
+32/06/2024
+
+// Fecha con mes invalido (debe ser 1-12)
+15/13/2024
+
+// Fecha que no existe en el calendario (30 de febrero)
+30/02/2024
+
+// Fecha con anio fuera de rango (debe ser 1900-2099)
+15/06/1899
+
+// Hora invalida (debe ser 00-23)
+25:00
+
+// Minutos invalidos (deben ser 00-59)
+10:65
+
+// Correo mal formado, sin extension de dominio (falta el ".algo")
+usuario@dominio
+
+// Texto entre comillas sin cerrar antes del salto de linea
+"este texto nunca se cierra
+
+// Caracter no reconocido por el clasificador (no es letra, numero, ni simbolo definido)
+foco # aire
+
+// Selector (.) seguido de un numero en vez de una letra
+foco.5
+
+// Simbolo suelto sin ningun significado en la gramatica
+&
+
+// Barra que no llega a formar un comentario "//"
+/x
+
+// --- Casos de regresion (bugs detectados en lexer.py) ---
+// Estos casos hoy dan error aunque "deberian" ser validos.
+// Quedan aca para volver a probarlos si corregis el lexer.
+
+// El signo mas no tiene transicion definida fuera del contexto de email
+// (falta la categoria "Mas" en la tabla de INICIO y de OPERADOR)
++
+
+// Subdominio con un segmento de mas de 3 letras despues del dominio
+// (el estado de extension solo admite hasta 3 letras por segmento)
+usuario@dominio.subdominio.com
+
+// El "menos" suelto siempre se interpreta como inicio de numero
+// negativo, nunca como operador de resta
+-
+
+// nota - probamos tambien una barra sola pegada a un salto de linea
+// y NO da error (queda como token BARRA_INICIAL sin validar) - es
+// otra inconsistencia del lexer, distinta a la del caso "/x" de mas
+// arriba, que si da error correctamente
+
+
+
+
